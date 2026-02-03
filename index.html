@@ -7,7 +7,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="manifest.json">
-    
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <style>
         body{margin:0;background:#000;overflow:hidden;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh}
@@ -19,7 +18,8 @@
         #startBtn{padding:18px 50px;font-size:22px;border-radius:40px;border:none;background:#0f0;color:#000;font-weight:700;cursor:pointer;box-shadow:0 0 25px rgba(0,255,0,0.4);transition:transform 0.2s}
         #startBtn:active{transform:scale(0.95)}
         #privacy-note{margin-top:20px;font-size:12px;color:#888}
-        #instruction{position:absolute;top:30px;width:100%;text-align:center;color:#fff;font-size:22px;font-weight:700;text-shadow:2px 2px 4px #000;z-index:100;display:none;pointer-events:none}
+        #instruction{position:absolute;top:25px;width:90%;text-align:center;color:#fff;font-size:18px;font-weight:700;text-shadow:2px 2px 4px #000;z-index:100;display:none;pointer-events:none;line-height:1.4;background:rgba(0,0,0,0.3);padding:10px;border-radius:15px}
+        #instruction span{font-size:14px;font-weight:400;opacity:0.9}
         #ui{position:absolute;bottom:30px;width:100%;display:none;flex-wrap:wrap;justify-content:center;gap:12px;z-index:100;padding:10px;box-sizing:border-box}
         button.tool-btn{padding:12px 20px;border-radius:25px;border:2px solid #0f0;background:rgba(0,0,0,0.8);color:#0f0;font-weight:700;min-width:80px}
         button.active{background:#0f0;color:#000}
@@ -34,8 +34,12 @@
         <div id="privacy-note">המצלמה תיפתח רק לאחר האישור. המידע אינו נשמר בשרת.</div>
     </div>
 
-    <div id="instruction">1. גע בלחיים בעזרת שתי הידיים</div>
-    <div id="instruction">2. גע בגבות בעזרת שתי הידיים</div>
+    <div id="instruction">
+        שמור על הראש ישר מול המצלמה<br>
+        <span>גע בפנייך בעזרת שתי הידיים בנקודות שונות</span><br>
+        <span>לחץ על "סרטון" או על "תמונה" כדי לשמור אל מכשירך</span>
+    </div>
+
     <video id="video" playsinline autoplay muted></video>
     <canvas id="canvas"></canvas>
     
@@ -43,8 +47,8 @@
         <button onclick="_0xMODE('none')" id="btnNone" class="tool-btn active">רגיל</button>
         <button onclick="_0xMODE('left')" id="btnLeft" class="tool-btn">שמאל</button>
         <button onclick="_0xMODE('right')" id="btnRight" class="tool-btn">ימין</button>
-        <button onclick="_0xSNAP()" class="tool-btn" style="border-color:#fff;color:#fff">📸 צילום</button>
-        <button onclick="_0xREC()" id="recBtn" class="tool-btn" style="border-color:#ff4444;color:#ff4444">⏺ וידאו</button>
+        <button onclick="_0xSNAP()" class="tool-btn" style="border-color:#fff;color:#fff">📸 תמונה</button>
+        <button onclick="_0xREC()" id="recBtn" class="tool-btn" style="border-color:#ff4444;color:#ff4444">⏺ סרטון</button>
     </div>
 
     <script>
@@ -87,7 +91,7 @@
 
                 if (d.length > 0) {
                     const tx = d[0].landmarks.getNose()[0].x;
-                    _0smoothX += (tx - _0smoothX) * 0.15; // מנגנון ייצוב מוחלק
+                    _0smoothX += (tx - _0smoothX) * 0.15;
 
                     if (_0m === 'none') {
                         _0x.drawImage(_0v, 0, 0, _0c.width, _0c.height);
@@ -109,7 +113,7 @@
 
         function _0xSNAP() {
             const l = document.createElement('a');
-            l.download = 'mirror-face.png';
+            l.download = 'face-symmetry.png';
             l.href = _0c.toDataURL('image/png');
             l.click();
         }
@@ -125,14 +129,14 @@
                     const bl = new Blob(_0chunks, { type: 'video/webm' });
                     const u = URL.createObjectURL(bl);
                     const a = document.createElement('a');
-                    a.href = u; a.download = 'mirror-video.webm'; a.click();
+                    a.href = u; a.download = 'face-symmetry.webm'; a.click();
                 };
                 _0r.start();
                 b.classList.add('recording'); b.innerText = '⏹ עצור';
                 _0isRec = !0;
             } else {
                 _0r.stop();
-                b.classList.remove('recording'); b.innerText = '⏺ וידאו';
+                b.classList.remove('recording'); b.innerText = '⏺ סרטון';
                 _0isRec = !1;
             }
         }
