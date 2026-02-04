@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SymmetryFace - Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
     <style>
@@ -11,21 +10,23 @@
         canvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:100%;max-height:100%;object-fit:contain;display:none}
         video{display:none}
         #landing{position:relative;z-index:200;text-align:center;color:#fff;padding:20px;max-width:400px}
-        #app-logo{width:220px;height:220px;margin-bottom:20px;border-radius:50%;border:2px solid #0f0;box-shadow: 0 0 20px rgba(15, 255, 0, 0.4); background: #fff; object-fit: contain; padding: 10px;}
-        #landing h1{font-size:38px;margin:0 0 10px 0;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.5)}
-        #startBtn{padding:18px 50px;font-size:22px;border-radius:40px;border:none;background:#0f0;color:#000;font-weight:700;cursor:pointer}
-        #ui{position:absolute;bottom:40px;width:100%;display:none;justify-content:center;gap:12px;z-index:100;flex-wrap:wrap}
-        button.tool-btn{padding:12px 18px;border-radius:25px;border:2px solid #0f0;background:rgba(0,0,0,0.8);color:#0f0;font-weight:700;cursor:pointer}
+        #app-logo{width:180px;height:180px;margin-bottom:20px;border-radius:50%;border:2px solid #0f0;background:#fff;object-fit:contain;padding:10px}
+        #ui{position:absolute;bottom:20px;width:100%;display:none;flex-direction:column;align-items:center;gap:15px;z-index:100}
+        .controls-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+        button.tool-btn{padding:10px 15px;border-radius:20px;border:2px solid #0f0;background:rgba(0,0,0,0.8);color:#0f0;font-weight:700;cursor:pointer}
         button.active{background:#0f0;color:#000}
-        #recBtn.recording{border-color:#ff4444;color:#ff4444;animation:blink 1s infinite}@keyframes blink{50%{opacity:.5}}
+        
+        /* עיצוב הסליידר */
+        #slider-container{width:80%;max-width:400px;display:flex;flex-direction:column;align-items:center;color:#fff;font-size:12px;gap:5px}
+        input[type=range]{width:100%;cursor:pointer;accent-color:#0f0}
     </style>
 </head>
 <body>
     <div id="landing">
         <img src="logo.png" id="app-logo" alt="Logo">
         <h1>SymmetryFace</h1>
-        <p>חוויית סימטריה מלאה ללא רקע.</p>
-        <button id="startBtn" onclick="startApp()">התחלת חוויה</button>
+        <p>שליטה ידנית בקו הסימטריה</p>
+        <button onclick="startApp()" style="padding:15px 40px;border-radius:30px;background:#0f0;font-weight:700">התחלה</button>
     </div>
 
     <video id="videoElement" playsinline autoplay muted></video>
@@ -33,11 +34,17 @@
     <canvas id="tempCanvas" style="display:none"></canvas>
     
     <div id="ui">
-        <button onclick="setMode('none')" id="btnNone" class="tool-btn active">רגיל</button>
-        <button onclick="setMode('left')" id="btnLeft" class="tool-btn">שמאל</button>
-        <button onclick="setMode('right')" id="btnRight" class="tool-btn">ימין</button>
-        <button onclick="takeSnapshot()" class="tool-btn" style="border-color:#fff;color:#fff">📸</button>
-        <button onclick="toggleRecording()" id="recBtn" class="tool-btn" style="border-color:#ff4444;color:#ff4444">⏺</button>
+        <div id="slider-container">
+            <span>הזז את קו הסימטריה:</span>
+            <input type="range" id="symmetrySlider" min="0" max="100" value="50" oninput="manualAdjust(this.value)">
+        </div>
+        <div class="controls-row">
+            <button onclick="setMode('none')" id="btnNone" class="tool-btn active">רגיל</button>
+            <button onclick="setMode('left')" id="btnLeft" class="tool-btn">שמאל</button>
+            <button onclick="setMode('right')" id="btnRight" class="tool-btn">ימין</button>
+            <button onclick="resetAuto()" class="tool-btn" style="border-color:#3498db;color:#3498db">🔄 אוטומטי</button>
+            <button onclick="takeSnapshot()" class="tool-btn" style="border-color:#fff;color:#fff">📸</button>
+        </div>
     </div>
 
     <script>
@@ -46,8 +53,19 @@
         const ctx = canvas.getContext('2d');
         const tempCanvas = document.getElementById('tempCanvas');
         const tCtx = tempCanvas.getContext('2d');
+        const slider = document.getElementById('symmetrySlider');
 
         let currentMode = 'none', smoothNoseX = 0, selfieSegmentation;
+        let isManual = false;
+
+        function manualAdjust(val) {
+            isManual = true;
+            smoothNoseX = (val / 100) * canvas.width;
+        }
+
+        function resetAuto() {
+            isManual = false;
+        }
 
         async function startApp() {
             document.getElementById('landing').style.display = 'none';
@@ -57,15 +75,11 @@
         }
 
         async function initModels() {
-            // טעינת מודל זיהוי פנים
             await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
             await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-
-            // טעינת מודל הסרת רקע
             selfieSegmentation = new SelfieSegmentation({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
-            selfieSegmentation.setOptions({ modelSelection: 1 }); // 1 למודל מדויק יותר
+            selfieSegmentation.setOptions({ modelSelection: 1 });
             selfieSegmentation.onResults(onResults);
-
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             video.srcObject = stream;
             video.onloadedmetadata = () => {
@@ -77,41 +91,44 @@
         }
 
         async function sendToSegmentation() {
-            if (!video.paused && !video.ended) {
-                await selfieSegmentation.send({image: video});
-            }
+            if (!video.paused && !video.ended) await selfieSegmentation.send({image: video});
             requestAnimationFrame(sendToSegmentation);
         }
 
         async function onResults(results) {
-            // 1. ציור המסכה על הקנבס הזמני
             tCtx.save();
             tCtx.clearRect(0, 0, canvas.width, canvas.height);
             tCtx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
-            
-            // 2. חיתוך הדמות מתוך הוידאו המקורי
-            tCtx.globalUint8ClampedArray = 'source-in'; // מציג רק איפה שיש מסכה
             tCtx.globalCompositeOperation = 'source-in';
             tCtx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
             tCtx.restore();
 
-            // 3. חישוב סימטריה (שימוש ב-FaceAPI לזיהוי מיקום האף)
-            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
-            if (detections.length > 0) {
-                const noseX = detections[0].landmarks.getNose()[0].x;
-                smoothNoseX += (noseX - smoothNoseX) * 0.15;
+            if (!isManual) {
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+                if (detections.length > 0) {
+                    const noseX = detections[0].landmarks.getNose()[0].x;
+                    smoothNoseX += (noseX - smoothNoseX) * 0.15;
+                    slider.value = (smoothNoseX / canvas.width) * 100;
+                }
             }
 
-            // 4. ציור התוצאה הסופית על הקנבס הראשי
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const w = canvas.width, h = canvas.height;
-
             if (currentMode === 'none') {
                 ctx.drawImage(tempCanvas, 0, 0);
             } else if (currentMode === 'left') {
                 drawSymmetry(0, smoothNoseX);
             } else if (currentMode === 'right') {
-                drawSymmetry(smoothNoseX, w - smoothNoseX);
+                drawSymmetry(smoothNoseX, canvas.width - smoothNoseX);
+            }
+
+            // קו מנחה רק בזמן הזזה ידנית
+            if (isManual) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.moveTo(smoothNoseX, 0);
+                ctx.lineTo(smoothNoseX, canvas.height);
+                ctx.stroke();
             }
         }
 
@@ -130,10 +147,9 @@
             document.getElementById('btn' + m.charAt(0).toUpperCase() + m.slice(1)).classList.add('active');
         }
 
-        // צילום והקלטה נשארים אותו דבר...
         function takeSnapshot() {
             const l = document.createElement('a');
-            l.download = 'Symmetry-NoBackground.png';
+            l.download = 'Symmetry-Manual.png';
             l.href = canvas.toDataURL('image/png');
             l.click();
         }
