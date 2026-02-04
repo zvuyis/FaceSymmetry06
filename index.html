@@ -9,25 +9,39 @@
     <style>
         :root { --accent: #4ebaba; --bg-glass: rgba(255, 255, 255, 0.1); --text-main: #e0e0e0; }
         body { margin: 0; background: #0a0c10; overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--text-main); }
+        
+        /* שכבות ומסכים */
         .screen { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 200; transition: opacity 0.5s; }
         canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
         video { display: none; }
+
+        /* עיצוב כרטיסי תוכן */
         .content-card { text-align: center; padding: 30px; max-width: 350px; background: rgba(15, 20, 25, 0.85); border-radius: 30px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
         #app-logo { width: 140px; height: 140px; margin-bottom: 20px; border-radius: 50%; border: 1px solid var(--accent); background: #fff; object-fit: contain; padding: 8px; }
         h1 { font-size: 38px; margin: 0 0 10px 0; color: #fff; }
         h2 { font-size: 24px; color: var(--accent); margin-top: 0; }
         p { font-size: 18px; margin-bottom: 30px; opacity: 0.9; font-weight: 300; }
+
+        /* רשימת הוראות */
         .instructions-list { text-align: right; margin: 25px 0; padding: 0; list-style: none; }
-        .instructions-list li { margin-bottom: 15px; font-size: 16px; display: flex; align-items: flex-start; gap: 10px; }
+        .instructions-list li { margin-bottom: 15px; font-size: 16px; display: flex; align-items: flex-start; gap: 10px; line-height: 1.4; }
         .instructions-list li::before { content: "•"; color: var(--accent); font-weight: bold; font-size: 20px; }
-        .main-btn { padding: 16px 40px; border-radius: 30px; background: var(--accent); color: #000; font-size: 18px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(78, 186, 186, 0.3); }
-        #ui { position: absolute; bottom: 30px; width: 100%; display: none; flex-direction: column; align-items: center; gap: 15px; z-index: 100; }
+
+        .main-btn { padding: 16px 40px; border-radius: 30px; background: var(--accent); color: #000; font-size: 18px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(78, 186, 186, 0.3); transition: transform 0.2s; }
+        .main-btn:active { transform: scale(0.95); }
+
+        /* ממשק שליטה (מסך 3) */
+        #ui { position: absolute; bottom: 35px; width: 100%; display: none; flex-direction: column; align-items: center; gap: 15px; z-index: 100; }
         .controls-row { display: flex; gap: 10px; justify-content: center; align-items: center; }
         button.tool-btn { padding: 12px 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-glass); color: #fff; backdrop-filter: blur(5px); cursor: pointer; }
         button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+        
         #slider-container { width: 80%; max-width: 350px; background: var(--bg-glass); padding: 12px 20px; border-radius: 20px; backdrop-filter: blur(5px); }
         input[type=range] { width: 100%; accent-color: var(--accent); }
-        .watermark { position: absolute; bottom: 8px; font-size: 10px; color: rgba(255,255,255,0.25); z-index: 210; width: 100%; text-align: center; pointer-events: none; }
+
+        /* ווטרמרק זכויות יוצרים */
+        .watermark { position: absolute; bottom: 8px; font-size: 10px; color: rgba(255,255,255,0.25); z-index: 210; width: 100%; text-align: center; pointer-events: none; letter-spacing: 0.5px; }
+        
         #recBtn.recording { border-color: #ff5e5e; color: #ff5e5e; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
@@ -45,11 +59,11 @@
 
     <div id="screen-2" class="screen" style="display:none; opacity:0;">
         <div class="content-card">
-            <h2>הוראות שימוש</h2>
+            <h2>איך זה עובד?</h2>
             <ul class="instructions-list">
-                <li>סעיף 1: TBD</li>
-                <li>סעיף 2: TBD</li>
-                <li>סעיף 3: TBD</li>
+                <li>עמדו מול המצלמה והביטו קדימה בקו ישר.</li>
+                <li>בחרו צד (ימין/שמאל) כדי לראות את הפנים בסימטריה מלאה.</li>
+                <li>ניתן להשתמש בסליידר לכיוונון ידני מדויק או להסתיר את הקו לצילום נקי.</li>
             </ul>
             <button class="main-btn" onclick="startCamera()">הבנתי, בואו נתחיל</button>
         </div>
@@ -77,9 +91,13 @@
         </div>
     </div>
 
-    <div class="watermark">Developed by Dekel Tzidon & Yishay Zvulun</div>
+    <div class="watermark">© 2026 | Developed by Dekel Tzidon & Yishay Zvulun | All Rights Reserved</div>
 
     <script>
+        /**
+         * (c) 2026 "Derech HaEmtza". All Rights Reserved.
+         * Logic & Development: Dekel Tzidon & Yishay Zvulun.
+         */
         const video = document.getElementById('videoElement');
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
@@ -137,7 +155,7 @@
         async function onResults(results) {
             tCtx.save();
             tCtx.clearRect(0, 0, canvas.width, canvas.height);
-            // היפוך המצלמה למצב מראה
+            // היפוך למצב מראה
             tCtx.translate(canvas.width, 0);
             tCtx.scale(-1, 1);
             tCtx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
@@ -148,7 +166,7 @@
             if (!isManual) {
                 const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
                 if (detections.length > 0) {
-                    // תיקון מיקום האף למצב מראה
+                    // התאמת מיקום האף למצב מראה
                     const noseX = canvas.width - detections[0].landmarks.getNose()[0].x;
                     smoothNoseX += (noseX - smoothNoseX) * 0.15;
                     slider.value = (smoothNoseX / canvas.width) * 100;
